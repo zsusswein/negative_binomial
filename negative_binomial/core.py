@@ -16,11 +16,6 @@ def r_derv(r_var, vec):
     @param r: The value of r in the derivative of the likelihood wrt r
     @param vec: The data vector used in the likelihood
     '''
-    if not r_var or not vec:
-        raise ValueError("r parameter and data must be specified")
-
-    if r_var <= 0:
-        raise ValueError("r must be strictly greater than 0")
 
     total_sum = 0
     obs_mean = np.mean(vec)  # Save the mean of the data
@@ -39,11 +34,6 @@ def p_equa(r_var, vec):
     @param r: The value of r in the derivative of the likelihood wrt p
     @param vec: Te data vector used in the likelihood
     '''
-    if not r_var or not vec:
-        raise ValueError("r parameter and data must be specified")
-
-    if r_var <= 0:
-        raise ValueError("r must be strictly greater than 0")
 
     data_sum = np.sum(vec)
     n_pop = float(len(vec))
@@ -55,9 +45,20 @@ def neg_bin_fit(vec, init=0.0001):
     @param vec: The data vector used to fit the negative binomial distribution
     @param init: Set init to a number close to 0, and you will always converge
     '''
-    if not vec:
-    	raise ValueError("Data must be specified")
+    
+    if not isinstance(vec,np.ndarray):
+        raise TypeError("Argument 'vec' must be a numpy.ndarray")
+    
+    if len(vec.shape) != 1:
+        raise TypeError("Argument 'vec' must be a vector with shape (n,)")
+    
+    if (not np.issubdtype(vec.dtype, np.floating)) & (not np.issubdtype(vec.dtype, np.integer)):
+    	raise ValueError("Numpy array must have elements of type float or type int")
 
     est_r = newton(r_derv, init, args=(vec,))
     est_p = p_equa(est_r, vec)
     return est_r, est_p
+
+
+
+
