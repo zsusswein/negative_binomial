@@ -40,23 +40,51 @@ def p_equa(r_var, vec):
     p_var = 1 - (data_sum / (n_pop * r_var + data_sum))
     return p_var
 
+
+def dl_dmu(mu, vec):
+    ''' 
+    Function represents the partial derivative of the log-likelihood with respect
+    to the mean of the negative binomial distribution.
+    
+    @param vec: The data vector
+    '''
+    
+    dl_dmu = np.sum(np.divide(vec, mu) - np.divide(1 + (vec / k), 1 + (mu / k)))
+
 def neg_bin_fit(vec, init=0.0001):
-    ''' Function to fit negative binomial to data
+    '''
+    Function to fit negative binomial to data. Assumes that underdispersion
+    does not occur.
     @param vec: The data vector used to fit the negative binomial distribution
     @param init: Set init to a number close to 0, and you will always converge
     '''
     
-    if not isinstance(vec,np.ndarray):
+    #####
+    ## Type and data checking
+    
+    # Check the input is properly specified
+    if not isinstance(vec, np.ndarray):
         raise TypeError("Argument 'vec' must be a numpy.ndarray")
     
     if len(vec.shape) != 1:
         raise TypeError("Argument 'vec' must be a vector with shape (n,)")
     
     if (not np.issubdtype(vec.dtype, np.floating)) & (not np.issubdtype(vec.dtype, np.integer)):
-    	raise ValueError("Numpy array must have elements of type float or type int")
-
+    	raise ValueError("Numpy array elements must be of type float or type int")
+    
+    # Check the data
+    if np.sum(vec < 0) > 0:
+        raise ValueError("Data must all be greater than or equal to zero, negative number provided")
+    
+    if np.mean(vec) > np.var(vec):
+        raise ValueError("Data are underdispersed; fitting method does not allow for underdispersion")
+    
+    #####
+    ## Fit the NB dist. to the vector
+    
     est_r = newton(r_derv, init, args=(vec,))
     est_p = p_equa(est_r, vec)
+    
     return est_r, est_p
 
 
