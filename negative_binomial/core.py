@@ -124,13 +124,16 @@ def neg_bin_fit(vec, init = 1, plot = False):
                args = (np.mean(vec), vec, len(vec),), 
                method = 'L-BFGS-B', 
                bounds = ((0.00001, None),))
-
+    
+    
+    mean = np.array([y_bar, fit.x[0]])
+    se = np.array([np.std(vec) / len(vec), np.sqrt(1 / fit.hess_inv.todense()[0, 0])])
 
     if plot:
         
-        plot_pdf(fit['x'][0], y_bar, vec)
+        plot_pdf(mean[1], mean[0], vec)
 
-    return y_bar, fit['x'][0]
+    return mean, se
 
 def get_sample(vec, max_sample_try):
     '''
@@ -171,32 +174,47 @@ def bootstrap_CI(vec, init = 1, alpha = .05, n_samples = 1000, max_sample_try = 
     '''
     
     sample_results = np.empty((n_samples, 2))
+
     
     for i in range(n_samples):
         
-        sample_results[i] = neg_bin_fit(vec = get_sample(vec, max_sample_try),
+        sample_results[i], se = neg_bin_fit(vec = get_sample(vec, max_sample_try),
                                         init = init, 
                                         plot = False)
     
-    upper = np.quantile(sample_results, 1 - alpha, axis = 0)
-    lower = np.quantile(sample_results, alpha, axis = 0)
-    mean = np.mean(sample_results, axis = 0)
+    boot_upper = np.quantile(sample_results, 1 - alpha, axis = 0)
+    boot_lower = np.quantile(sample_results, alpha, axis = 0)
+    boot_mean = np.mean(sample_results, axis = 0)
     
+    mean, se = neg_bin_fit(vec = vec,
+                           init = init, 
+                           plot = False)
+    
+    z_upper = mean + 1.96 * se
+    z_lower = mean - 1.96 * se
     
     if plot:
         
         x = np.array([0, .5])
         
         fig, ax = plt.subplots()
-        ax.plot(x, mean, 'o', color = 'blue')
-        ax.errorbar(x = x, y = mean, yerr = upper - lower, fmt = 'o', color = 'blue')
+        ax.plot(x, mean, 'o', color = 'blue', label = 'Bootstrap')
+        ax.plot((x, x), (boot_upper, boot_lower), color = 'blue')
+        #ax.errorbar(x = x, y = mean, yerr = boot_upper - boot_lower, fmt = 'o', color = 'blue')
         ax.set_xticks(x)
-        ax.set_xticklabels(['mu_hat', 'k_hat'])
+        ax.set_xticklabels(['Bootstrap: mu_hat', 'Bootstrap: k_hat'])
         ax.set_title('Confidence intervals for means')
         
+        ax.plot(x+.1, mean, 'o', color = 'green', label = 'Normal approx')
+        ax.plot((x+.1, x+.1), (z_upper, z_lower), color = 'green')
+
+        #ax.errorbar(x = x+.1, y = mean, yerr = z_upper - z_lower, fmt = 'o', color = 'green')
+        ax.set_xticks(x)
+        ax.set_xticklabels(['mu_hat', 'k_hat'])
+        ax.legend()
         plt.show()
     
-    return upper, lower, mean
+    return np.array([boot_upper, boot_mean, boot_lower]), np.array([z_upper, mean, z_lower])
 
 
 
