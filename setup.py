@@ -11,9 +11,9 @@ setup(
     version='0.1.0',
     description='Package for fitting negative binomial distributions',
     long_description=readme,
-    author='Peter Xenopoulos',
-    author_email='pnx200@nyu.edu',
-    url='https://github.com/peterxeno/negative_binomial',
+    author='Zachary Susswein',
+    author_email='zsusswein@gmail.com',
+    url='https://github.com/zsusswein/negative_binomial',
     license=license,
     packages=find_packages(exclude=('tests', 'docs'))
 )
