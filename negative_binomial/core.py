@@ -1,51 +1,21 @@
 ''' This module contains functions necessary to fit a negative binomial
 using the maximum likelihood estimator and some numerical analysis
 
-@author: Peter Xenopoulos
-@website: http://www.peterxeno.com
+@author: Zachary Susswein (based on original code by Peter Xenopoulos)
 '''
 
-import math
+## Libraries
 import numpy as np
-
-from scipy.optimize import newton, minimize
-from scipy.special import digamma
+from scipy.optimize import minimize
 from scipy.stats import nbinom
+from matplotlib.pyplot import plot, hist
 
-
-def r_derv(r_var, vec):
-    ''' Function that represents the derivative of the neg bin likelihood wrt r
-    @param r: The value of r in the derivative of the likelihood wrt r
-    @param vec: The data vector used in the likelihood
-    '''
-
-    total_sum = 0
-    obs_mean = np.mean(vec)  # Save the mean of the data
-    n_pop = float(len(vec))  # Save the length of the vector, n_pop
-
-    for obs in vec:
-        total_sum += digamma(obs + r_var)
-
-    total_sum -= n_pop*digamma(r_var)
-    total_sum += n_pop*math.log(r_var / (r_var + obs_mean))
-
-    return total_sum
-
-def p_equa(r_var, vec):
-    ''' Function that represents the equation for p in the neg bin likelihood wrt p
-    @param r: The value of r in the derivative of the likelihood wrt p
-    @param vec: Te data vector used in the likelihood
-    '''
-
-    data_sum = np.sum(vec)
-    n_pop = float(len(vec))
-    p_var = 1 - (data_sum / (n_pop * r_var + data_sum))
-    return p_var
-
+## Functions
 def nu_sum(vec_element, k):
     '''
     This function efficiently computes the gamma function term of the NB log lik
-    by expanding the sum into a grid
+    by expanding the sum into a grid. Treats the gamma function as a logged
+    factorial because the data must be integer values.
     
     @param vec_element: an element of the data vector
     @param k: the value of the dispersion parameter
@@ -87,8 +57,8 @@ def plot_pdf(k_hat, y_bar, vec):
     '''
     
     
-    p_hat = (y_bar**2 / k) / (y_bar + (y_bar**2 / k))
-    n_hat = y_bar**2 / (y_bar**2 / k)
+    p_hat = (y_bar**2 / k_hat) / (y_bar + (y_bar**2 / k_hat))
+    n_hat = y_bar**2 / (y_bar**2 / k_hat)
     
     x = np.arange(min(vec), max(vec + 1), 1)
     
@@ -96,8 +66,8 @@ def plot_pdf(k_hat, y_bar, vec):
                      p = p_hat)
     
     
-    plt.hist(vec, alpha = .2)
-    plt.plot(y_tilde.pmf(x) * len(vec), color = 'blue')
+    hist(vec, alpha = .2)
+    plot(y_tilde.pmf(x) * len(vec), color = 'blue')
     
     return None
     
@@ -160,10 +130,7 @@ def neg_bin_fit(vec, init = 1, plot = False):
     if plot:
         
         plot_pdf(fit['x'][0], y_bar, vec)
-    
-    est_r = newton(r_derv, init, args=(vec,))
-    est_p = p_equa(est_r, vec)
-    
+
     return y_bar, fit['x'][0]
 
 
