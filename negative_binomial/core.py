@@ -8,7 +8,7 @@ using the maximum likelihood estimator and some numerical analysis
 import numpy as np
 from scipy.optimize import minimize
 from scipy.stats import nbinom
-from matplotlib.pyplot import plot, hist
+import matplotlib.pyplot as plt
 
 ## Functions
 def nu_sum(vec_element, k):
@@ -56,7 +56,6 @@ def plot_pdf(k_hat, y_bar, vec):
     @param y_bar: the estimated value of the NB mean
     '''
     
-    
     p_hat = (y_bar**2 / k_hat) / (y_bar + (y_bar**2 / k_hat))
     n_hat = y_bar**2 / (y_bar**2 / k_hat)
     
@@ -66,15 +65,15 @@ def plot_pdf(k_hat, y_bar, vec):
                      p = p_hat)
     
     
-    hist(vec, alpha = .2)
-    plot(y_tilde.pmf(x) * len(vec), color = 'blue')
+    plt.hist(vec, alpha = .2)
+    plt.plot(y_tilde.pmf(x) * len(vec), color = 'blue')
     
     return None
     
 
 def neg_bin_fit(vec, init = 1, plot = False):
     '''
-    Function to fit negative binomial dist. to data. Assumes that underdispersion
+    The workhorse function to fit negative binomial dist. to data. Assumes that underdispersion
     does not occur, which guarantees the score has at least one root in the positive reals.
     
     Uses the mean and dispersion parameterization of the pmf common in ecology.
@@ -133,9 +132,71 @@ def neg_bin_fit(vec, init = 1, plot = False):
 
     return y_bar, fit['x'][0]
 
+def get_sample(vec, max_sample_try):
+    '''
+    This function generates a single bootstrap sample from the data. It rejects
+    sample values that are underdispersed.
+    '''
+    
+    success = 0
+    n_sample_try = 0
+    
+    while (success == 0) & (n_sample_try < max_sample_try):
+    
+        sample = np.random.choice(a = vec, size = vec.shape[0], replace = True)
 
-
-
+        n_sample_try += 1
+        
+        if np.mean(sample) < np.var(sample):
+        
+            success = 1
+            
+    if success == 0:
+        raise Exception("Unable to generate samples without underdispersion")
+    
+    return sample 
+    
+def bootstrap_CI(vec, init = 1, alpha = .05, n_samples = 1000, max_sample_try = 100, plot = True):
+    '''
+    This function uses uses bootstrapping to compute the (1 - alpha)% confidence
+    intervals for the negative binomial mean and dispersion parameter.
+    
+    @param vec: the data vector
+    @param init: the initial value to pass to `neg_bin_fit()`
+    @param alpha: the desired confidence level (by default 0.05)
+    @param n_samples: the number of bootstrap samples
+    @param max_sample_try: the maximum number of times to attempt bootstrapping
+    each sample before raising an exception. Passed to 'get_sample()'
+    @param plot: A boolean, whether to plot the results
+    '''
+    
+    sample_results = np.empty((n_samples, 2))
+    
+    for i in range(n_samples):
+        
+        sample_results[i] = neg_bin_fit(vec = get_sample(vec, max_sample_try),
+                                        init = init, 
+                                        plot = False)
+    
+    upper = np.quantile(sample_results, 1 - alpha, axis = 0)
+    lower = np.quantile(sample_results, alpha, axis = 0)
+    mean = np.mean(sample_results, axis = 0)
+    
+    
+    if plot:
+        
+        x = np.array([0, .5])
+        
+        fig, ax = plt.subplots()
+        ax.plot(x, mean, 'o', color = 'blue')
+        ax.errorbar(x = x, y = mean, yerr = upper - lower, fmt = 'o', color = 'blue')
+        ax.set_xticks(x)
+        ax.set_xticklabels(['mu_hat', 'k_hat'])
+        ax.set_title('Confidence intervals for means')
+        
+        plt.show()
+    
+    return upper, lower, mean
 
 
 
