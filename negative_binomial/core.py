@@ -48,7 +48,7 @@ def neg_log_lik(k, y_bar, vec, n):
     
     return -log_lik
 
-def plot_pdf(k_hat, y_bar, vec):
+def plot_pmf(k_hat, y_bar, vec):
     '''
     plot the estimated pmf over the data
     
@@ -131,7 +131,7 @@ def neg_bin_fit(vec, init = 1, plot = False):
 
     if plot:
         
-        plot_pdf(mean[1], mean[0], vec)
+        plot_pmf(mean[1], mean[0], vec)
 
     return mean, se
 
